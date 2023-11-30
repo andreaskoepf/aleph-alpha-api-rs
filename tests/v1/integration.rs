@@ -34,6 +34,25 @@ async fn completion_with_luminous_base() {
 }
 
 #[tokio::test]
+async fn completion_with_luminous_base_token_ids() {
+    // Given
+    let client = Client::new(AA_API_TOKEN.clone()).expect("failed to create client");
+    let prompt = Prompt::from_token_ids(vec![49222, 15, 5390, 4], None);
+
+    // When
+    let mut req = CompletionRequest::new("luminous-base".into(), prompt, 20);
+    req.echo = Some(true);
+
+    let response = client.completion(&req).await.unwrap();
+
+    // Then
+    assert!(!response.completions.is_empty());
+    assert!(!response.best_text().is_empty());
+    assert!(response.best_text().contains("Hello, World!"));
+    println!("{:?}", response);
+}
+
+#[tokio::test]
 async fn tokenization_with_luminous_base() {
     // Given
     let model = "luminous-base";

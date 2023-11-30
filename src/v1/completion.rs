@@ -19,27 +19,58 @@ impl Prompt {
         Self(vec![Modality::from_text(text)])
     }
 
+    pub fn from_token_ids(ids: Vec<u32>, controls: Option<Vec<TokenControl>>) -> Self {
+        Self(vec![Modality::from_token_ids(ids, controls)])
+    }
+
     /// Create a multimodal prompt from a list of individual items with any modality.
     pub fn from_vec(items: Vec<Modality>) -> Self {
         Self(items)
     }
 }
 
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct TokenControl {
+    /// Index of the token, relative to the list of tokens IDs in the current prompt item.
+    pub index: u32,
+    /// Factor to apply to the given token in the attention matrix.
+    ///
+    /// - 0 <= factor < 1 => Suppress the given token
+    /// - factor == 1 => identity operation, no change to attention
+    /// - factor > 1 => Amplify the given token
+    pub factor: f64,
+}
+
 /// The prompt for models can be a combination of different modalities (Text and Image). The type of
 /// modalities which are supported depend on the Model in question.
-#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Modality {
     /// The only type of prompt which can be used with pure language models
     Text { data: String },
     /// An image input into the model. See [`Modality::from_image_path`].
     Image { data: String },
+    ///
+    #[serde(rename = "token_ids")]
+    TokenIds {
+        data: Vec<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        controls: Option<Vec<TokenControl>>,
+    },
 }
 
 impl Modality {
     /// Instantiates a text prompt
     pub fn from_text(text: impl Into<String>) -> Self {
         Modality::Text { data: text.into() }
+    }
+
+    /// Instantiates a token_ids prompt
+    pub fn from_token_ids(ids: Vec<u32>, controls: Option<Vec<TokenControl>>) -> Self {
+        Modality::TokenIds {
+            data: ids,
+            controls,
+        }
     }
 
     // pub fn from_image_path(path: impl AsRef<Path>) -> Result<Self, LoadImageError> {
@@ -331,7 +362,9 @@ impl CompletionRequest {
 
 #[derive(Deserialize, Debug)]
 pub struct CompletionResponse {
+    /// model name and version (if any) of the used model for inference
     pub model_version: String,
+    /// list of completions; may contain only one entry if no more are requested (see parameter n)
     pub completions: Vec<CompletionOutput>,
 }
 
