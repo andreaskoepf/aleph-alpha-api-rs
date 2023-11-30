@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Debug)]
 pub struct ApiTokenMetadata {
     /// A simple description that was supplied when creating the token
-    pub description: String,
+    pub description: Option<String>,
     /// The token ID to use when calling other endpoints
     pub token_id: i32,
 }

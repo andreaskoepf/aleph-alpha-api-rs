@@ -3,6 +3,7 @@ use super::completion::{CompletionRequest, CompletionResponse};
 use super::tokenization::{
     DetokenizationRequest, DetokenizationResponse, TokenizationRequest, TokenizationResponse,
 };
+use super::users::{UserChange, UserDetail};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ApiError {
@@ -115,9 +116,23 @@ impl Client {
         &self,
         path: &str,
         data: &I,
+        query: Option<&[(&str, &str)]>,
     ) -> Result<O, ApiError> {
+        use reqwest::header::{ACCEPT, CONTENT_TYPE};
+
         let url = format!("{base_url}{path}", base_url = self.base_url, path = path);
-        let response = self.http_client.post(url).json(data).send().await?;
+        let mut response = self.http_client.post(url);
+
+        if let Some(q) = query {
+            response = response.query(q);
+        }
+
+        let response = response
+            .header(CONTENT_TYPE, "application/json")
+            .header(ACCEPT, "application/json")
+            .json(data)
+            .send()
+            .await?;
         let response = http::translate_http_error(response).await?;
         let response_body: O = response.json().await?;
         Ok(response_body)
@@ -139,21 +154,21 @@ impl Client {
         &self,
         req: &CompletionRequest,
     ) -> Result<CompletionResponse, ApiError> {
-        Ok(self.post("/complete", req).await?)
+        Ok(self.post("/complete", req, None).await?)
     }
 
     pub async fn tokenize(
         &self,
         req: &TokenizationRequest,
     ) -> Result<TokenizationResponse, ApiError> {
-        Ok(self.post("/tokenize", req).await?)
+        Ok(self.post("/tokenize", req, None).await?)
     }
 
     pub async fn detokenize(
         &self,
         req: &DetokenizationRequest,
     ) -> Result<DetokenizationResponse, ApiError> {
-        Ok(self.post("/detokenize", req).await?)
+        Ok(self.post("/detokenize", req, None).await?)
     }
 
     /// Will return the version number of the API that is deployed to this environment.
@@ -171,12 +186,26 @@ impl Client {
         &self,
         req: &CreateApiTokenRequest,
     ) -> Result<CreateApiTokenResponse, ApiError> {
-        Ok(self.post("/users/me/tokens", req).await?)
+        Ok(self.post("/users/me/tokens", req, None).await?)
     }
 
+    /// Delete an API token
     pub async fn delete_api_token(&self, token_id: i32) -> Result<(), ApiError> {
         let path = format!("/users/me/tokens/{token_id}");
         http::delete(&self.http_client, &self.base_url, &path).await?;
         Ok(())
+    }
+
+    /// Get settings for own user
+    pub async fn get_user_settings(&self) -> Result<UserDetail, ApiError> {
+        Ok(self.get("/users/me").await?)
+    }
+
+    /// Change settings for own user
+    pub async fn change_user_settings(
+        &self,
+        settings: &UserChange,
+    ) -> Result<UserDetail, ApiError> {
+        Ok(self.post("/users/me", settings, None).await?)
     }
 }

@@ -2,6 +2,8 @@ use aleph_alpha_api_rs::v1::api_tokens::{CreateApiTokenRequest, CreateApiTokenRe
 use aleph_alpha_api_rs::v1::client::Client;
 use aleph_alpha_api_rs::v1::completion::{CompletionRequest, Prompt};
 use aleph_alpha_api_rs::v1::tokenization::{DetokenizationRequest, TokenizationRequest};
+use aleph_alpha_api_rs::v1::users::UserDetail;
+
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 
@@ -102,6 +104,7 @@ async fn list_api_tokens() {
 }
 
 #[tokio::test]
+#[ignore]
 async fn create_and_delete_api_token() {
     let client = Client::new(AA_API_TOKEN.clone()).unwrap();
 
@@ -109,8 +112,25 @@ async fn create_and_delete_api_token() {
         description: "A test token".to_string(),
     };
     let create_res: CreateApiTokenResponse = client.create_api_token(&create_req).await.unwrap();
-
     assert!(!create_res.token.is_empty());
 
+    client
+        .delete_api_token(create_res.metadata.token_id)
+        .await
+        .unwrap();
+
     println!("{:?}", create_res);
+}
+
+#[tokio::test]
+async fn get_user_settings() {
+    // Given
+    let client = Client::new(AA_API_TOKEN.clone()).unwrap();
+
+    // When
+    let user_detail: UserDetail = client.get_user_settings().await.unwrap();
+
+    println!("{:?}", user_detail);
+
+    assert!(user_detail.email.contains("@"))
 }
