@@ -1,4 +1,8 @@
+use super::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse, ListApiTokensResponse};
 use super::completion::{CompletionRequest, CompletionResponse};
+use super::tokenization::{
+    DetokenizationRequest, DetokenizationResponse, TokenizationRequest, TokenizationResponse,
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ApiError {
@@ -69,6 +73,26 @@ mod http {
             Ok(response)
         }
     }
+
+    pub async fn get(
+        client: &reqwest::Client,
+        base_url: &str,
+        path: &str,
+    ) -> Result<reqwest::Response, ApiError> {
+        let url = format!("{base_url}{path}");
+        let response = client.get(url).send().await?;
+        translate_http_error(response).await
+    }
+
+    pub async fn delete(
+        client: &reqwest::Client,
+        base_url: &str,
+        path: &str,
+    ) -> Result<reqwest::Response, ApiError> {
+        let url = format!("{base_url}{path}");
+        let response = client.delete(url).send().await?;
+        translate_http_error(response).await
+    }
 }
 
 impl Client {
@@ -99,7 +123,60 @@ impl Client {
         Ok(response_body)
     }
 
-    pub async fn completion(&self, req: CompletionRequest) -> Result<CompletionResponse, ApiError> {
-        Ok(self.post("/complete", &req).await?)
+    pub async fn get<O: serde::de::DeserializeOwned>(&self, path: &str) -> Result<O, ApiError> {
+        let response = http::get(&self.http_client, &self.base_url, path).await?;
+        let response_body = response.json().await?;
+        Ok(response_body)
+    }
+
+    pub async fn get_string(&self, path: &str) -> Result<String, ApiError> {
+        let response = http::get(&self.http_client, &self.base_url, path).await?;
+        let response_body = response.text().await?;
+        Ok(response_body)
+    }
+
+    pub async fn completion(
+        &self,
+        req: &CompletionRequest,
+    ) -> Result<CompletionResponse, ApiError> {
+        Ok(self.post("/complete", req).await?)
+    }
+
+    pub async fn tokenize(
+        &self,
+        req: &TokenizationRequest,
+    ) -> Result<TokenizationResponse, ApiError> {
+        Ok(self.post("/tokenize", req).await?)
+    }
+
+    pub async fn detokenize(
+        &self,
+        req: &DetokenizationRequest,
+    ) -> Result<DetokenizationResponse, ApiError> {
+        Ok(self.post("/detokenize", req).await?)
+    }
+
+    /// Will return the version number of the API that is deployed to this environment.
+    pub async fn get_version(&self) -> Result<String, ApiError> {
+        Ok(self.get_string("/version").await?)
+    }
+
+    /// Will return a list of API tokens that are registered for this user (only token metadata is returned, not the actual tokens)
+    pub async fn list_api_tokens(&self) -> Result<ListApiTokensResponse, ApiError> {
+        Ok(self.get("/users/me/tokens").await?)
+    }
+
+    /// Create a new token to authenticate against the API with (the actual API token is only returned when calling this endpoint)
+    pub async fn create_api_token(
+        &self,
+        req: &CreateApiTokenRequest,
+    ) -> Result<CreateApiTokenResponse, ApiError> {
+        Ok(self.post("/users/me/tokens", req).await?)
+    }
+
+    pub async fn delete_api_token(&self, token_id: i32) -> Result<(), ApiError> {
+        let path = format!("/users/me/tokens/{token_id}");
+        http::delete(&self.http_client, &self.base_url, &path).await?;
+        Ok(())
     }
 }
