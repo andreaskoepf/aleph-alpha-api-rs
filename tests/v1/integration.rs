@@ -89,7 +89,7 @@ async fn evaluate_with_luminous_base_flat_earth() {
 
     assert!(
         response_false.result.log_perplexity_per_token.unwrap()
-            < response_true.result.log_perplexity.unwrap()
+            < response_true.result.log_perplexity_per_token.unwrap()
     )
 }
 
