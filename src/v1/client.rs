@@ -1,5 +1,6 @@
 use super::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse, ListApiTokensResponse};
 use super::completion::{CompletionRequest, CompletionResponse};
+use super::evaluate::{EvaluationRequest, EvaluationResponse};
 use super::tokenization::{
     DetokenizationRequest, DetokenizationResponse, TokenizationRequest, TokenizationResponse,
 };
@@ -116,7 +117,7 @@ impl Client {
         &self,
         path: &str,
         data: &I,
-        query: Option<&[(&str, &str)]>,
+        query: Option<Vec<(String, String)>>,
     ) -> Result<O, ApiError> {
         use reqwest::header::{ACCEPT, CONTENT_TYPE};
 
@@ -124,7 +125,7 @@ impl Client {
         let mut response = self.http_client.post(url);
 
         if let Some(q) = query {
-            response = response.query(q);
+            response = response.query(&q);
         }
 
         let response = response
@@ -136,6 +137,20 @@ impl Client {
         let response = http::translate_http_error(response).await?;
         let response_body: O = response.json().await?;
         Ok(response_body)
+    }
+
+    pub async fn post_nice<I: serde::ser::Serialize, O: serde::de::DeserializeOwned>(
+        &self,
+        path: &str,
+        data: &I,
+        nice: Option<bool>,
+    ) -> Result<O, ApiError> {
+        let query = if let Some(be_nice) = nice {
+            Some(vec![("nice".to_owned(), be_nice.to_string())])
+        } else {
+            None
+        };
+        Ok(self.post(path, data, query).await?)
     }
 
     pub async fn get<O: serde::de::DeserializeOwned>(&self, path: &str) -> Result<O, ApiError> {
@@ -153,8 +168,17 @@ impl Client {
     pub async fn completion(
         &self,
         req: &CompletionRequest,
+        nice: Option<bool>,
     ) -> Result<CompletionResponse, ApiError> {
-        Ok(self.post("/complete", req, None).await?)
+        Ok(self.post_nice("/complete", req, nice).await?)
+    }
+
+    pub async fn evaluate(
+        &self,
+        req: &EvaluationRequest,
+        nice: Option<bool>,
+    ) -> Result<EvaluationResponse, ApiError> {
+        Ok(self.post_nice("/evaluate", req, nice).await?)
     }
 
     pub async fn tokenize(
