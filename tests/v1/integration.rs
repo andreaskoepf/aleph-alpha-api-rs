@@ -56,23 +56,41 @@ async fn completion_with_luminous_base_token_ids() {
 #[tokio::test]
 async fn evaluate_with_luminous_base() {
     let model = "luminous-base";
-    let prompt = Prompt::from_text("An apple a day keeps the");
+    let prompt = "An apple a day keeps the";
     let completion_expected = " doctor away";
     let client = Client::new(AA_API_TOKEN.clone()).expect("failed to create client");
 
-    let req = EvaluationRequest {
-        model: model.to_owned(),
-        prompt,
-        hosting: None,
-        completion_expected: completion_expected.to_owned(),
-        contextual_control_threshold: None,
-        control_log_additive: None,
-    };
+    let req = EvaluationRequest::from_text(model, prompt, completion_expected);
 
     let response = client.evaluate(&req, Some(true)).await.unwrap();
     assert!(!response.model_version.is_empty());
     assert_eq!(response.result.correct_greedy, Some(true));
-    println!("{:?}", response)
+    println!("{:?}", response);
+}
+
+#[tokio::test]
+async fn evaluate_with_luminous_base_flat_earth() {
+    let model = "luminous-base";
+    let prompt = "The earth is flat. This statement is";
+    let completion_false = " false.";
+    let completion_true = " true.";
+    let client = Client::new(AA_API_TOKEN.clone()).expect("failed to create client");
+
+    let req_false = EvaluationRequest::from_text(model, prompt, completion_false);
+    let req_true = EvaluationRequest::from_text(model, prompt, completion_true);
+
+    let response_false = client.evaluate(&req_false, Some(true)).await.unwrap();
+    let response_true = client.evaluate(&req_true, Some(true)).await.unwrap();
+
+    assert!(!response_false.model_version.is_empty());
+
+    println!("response_false: {:?}", response_false);
+    println!("response_true: {:?}", response_true);
+
+    assert!(
+        response_false.result.log_perplexity_per_token.unwrap()
+            < response_true.result.log_perplexity.unwrap()
+    )
 }
 
 #[tokio::test]

@@ -38,6 +38,21 @@ pub struct EvaluationRequest {
     pub control_log_additive: Option<bool>,
 }
 
+impl EvaluationRequest {
+    pub fn from_text(
+        model: impl Into<String>,
+        prompt: impl Into<String>,
+        completion_expected: impl Into<String>,
+    ) -> Self {
+        EvaluationRequest {
+            model: model.into(),
+            prompt: Prompt::from_text(prompt),
+            completion_expected: completion_expected.into(),
+            ..EvaluationRequest::default()
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct EvaluationResponse {
     /// model name and version (if any) of the used model for inference
