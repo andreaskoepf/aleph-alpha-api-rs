@@ -1,5 +1,6 @@
 use super::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse, ListApiTokensResponse};
 use super::completion::{CompletionRequest, CompletionResponse};
+use super::embedding::{EmbeddingRequest, EmbeddingResponse};
 use super::evaluate::{EvaluationRequest, EvaluationResponse};
 use super::tokenization::{
     DetokenizationRequest, DetokenizationResponse, TokenizationRequest, TokenizationResponse,
@@ -179,6 +180,14 @@ impl Client {
         nice: Option<bool>,
     ) -> Result<EvaluationResponse, ApiError> {
         Ok(self.post_nice("/evaluate", req, nice).await?)
+    }
+
+    pub async fn embed(
+        &self,
+        req: &EmbeddingRequest,
+        nice: Option<bool>,
+    ) -> Result<EmbeddingResponse, ApiError> {
+        Ok(self.post_nice("/embed", req, nice).await?)
     }
 
     pub async fn tokenize(

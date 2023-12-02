@@ -23,7 +23,7 @@ pub struct EvaluationRequest {
     /// empty string (default). The prompt may contain a zero shot or few shot task.
     pub completion_expected: String,
 
-    /// If set to null, attention control parameters only apply to those tokens that have explicitly been set
+    /// If set to `None`, attention control parameters only apply to those tokens that have explicitly been set
     /// in the request. If set to a non-null value, we apply the control parameters to similar tokens as
     /// well. Controls that have been applied to one token will then be applied to all other tokens that have
     /// at least the similarity score defined by this parameter. The similarity score is the cosine
@@ -44,11 +44,11 @@ impl EvaluationRequest {
         prompt: impl Into<String>,
         completion_expected: impl Into<String>,
     ) -> Self {
-        EvaluationRequest {
+        Self {
             model: model.into(),
             prompt: Prompt::from_text(prompt),
             completion_expected: completion_expected.into(),
-            ..EvaluationRequest::default()
+            ..Self::default()
         }
     }
 }

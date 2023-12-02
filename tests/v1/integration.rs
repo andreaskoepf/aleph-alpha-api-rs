@@ -1,6 +1,7 @@
 use aleph_alpha_api_rs::v1::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse};
 use aleph_alpha_api_rs::v1::client::Client;
 use aleph_alpha_api_rs::v1::completion::{CompletionRequest, Prompt};
+use aleph_alpha_api_rs::v1::embedding::EmbeddingRequest;
 use aleph_alpha_api_rs::v1::evaluate::EvaluationRequest;
 use aleph_alpha_api_rs::v1::tokenization::{DetokenizationRequest, TokenizationRequest};
 use aleph_alpha_api_rs::v1::users::UserDetail;
@@ -63,9 +64,10 @@ async fn evaluate_with_luminous_base() {
     let req = EvaluationRequest::from_text(model, prompt, completion_expected);
 
     let response = client.evaluate(&req, Some(true)).await.unwrap();
+    println!("{:?}", response);
+
     assert!(!response.model_version.is_empty());
     assert_eq!(response.result.correct_greedy, Some(true));
-    println!("{:?}", response);
 }
 
 #[tokio::test]
@@ -90,7 +92,23 @@ async fn evaluate_with_luminous_base_flat_earth() {
     assert!(
         response_false.result.log_perplexity_per_token.unwrap()
             < response_true.result.log_perplexity_per_token.unwrap()
-    )
+    );
+}
+
+#[tokio::test]
+async fn embed_with_luminous_base() {
+    let client = Client::new(AA_API_TOKEN.clone()).expect("failed to create client");
+
+    let model = "luminous-base";
+    let text_prompt = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.";
+    let req = EmbeddingRequest::from_text(model, text_prompt, 1, "max", true);
+
+    let response = client.embed(&req, Some(true)).await.unwrap();
+
+    assert_eq!(response.embeddings.len(), 1);
+    assert!(response.embeddings.get("layer_1").is_some());
+    assert!(response.embeddings["layer_1"].get("max").is_some());
+    assert!(response.embeddings["layer_1"]["max"].len() > 64);
 }
 
 #[tokio::test]

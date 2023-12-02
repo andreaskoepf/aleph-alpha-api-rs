@@ -16,7 +16,11 @@ impl Prompt {
 
     /// Create a prompt from a single text item.
     pub fn from_text(text: impl Into<String>) -> Self {
-        Self(vec![Modality::from_text(text)])
+        Self(vec![Modality::from_text(text, None)])
+    }
+
+    pub fn from_text_with_controls(text: impl Into<String>, controls: Vec<TextControl>) -> Self {
+        Self(vec![Modality::from_text(text, Some(controls))])
     }
 
     pub fn from_token_ids(ids: Vec<u32>, controls: Option<Vec<TokenControl>>) -> Self {
@@ -33,6 +37,7 @@ impl Prompt {
 pub struct TokenControl {
     /// Index of the token, relative to the list of tokens IDs in the current prompt item.
     pub index: u32,
+
     /// Factor to apply to the given token in the attention matrix.
     ///
     /// - 0 <= factor < 1 => Suppress the given token
@@ -41,19 +46,132 @@ pub struct TokenControl {
     pub factor: f64,
 }
 
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct TextControl {
+    /// Starting character index to apply the factor to.
+    start: i32,
+
+    /// The amount of characters to apply the factor to.
+    length: i32,
+
+    /// Factor to apply to the given token in the attention matrix.
+    ///
+    /// - 0 <= factor < 1 => Suppress the given token
+    /// - factor == 1 => identity operation, no change to attention
+    /// - factor > 1 => Amplify the given token
+    factor: f64,
+
+    /// What to do if a control partially overlaps with a text token.
+    ///
+    /// If set to "partial", the factor will be adjusted proportionally with the amount
+    /// of the token it overlaps. So a factor of 2.0 of a control that only covers 2 of
+    /// 4 token characters, would be adjusted to 1.5. (It always moves closer to 1, since
+    /// 1 is an identity operation for control factors.)
+    ///
+    /// If set to "complete", the full factor will be applied as long as the control
+    /// overlaps with the token at all.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    token_overlap: Option<String>,
+}
+
+/// Bounding box in logical coordinates. From 0 to 1. With (0,0) being the upper left corner,
+/// and relative to the entire image.
+///
+/// Keep in mind, non-square images are center-cropped by default before going to the model.
+/// (You can specify a custom cropping if you want.). Since control coordinates are relative to
+/// the entire image, all or a portion of your control may be outside the "model visible area".
+#[derive(Serialize, Clone, Debug, Default)]
+pub struct BoundingBox {
+    /// x-coordinate of top left corner of the control bounding box.
+    /// Must be a value between 0 and 1, where 0 is the left corner and 1 is the right corner.
+    left: f64,
+
+    /// y-coordinate of top left corner of the control bounding box
+    /// Must be a value between 0 and 1, where 0 is the top pixel row and 1 is the bottom row.
+    top: f64,
+
+    /// width of the control bounding box
+    /// Must be a value between 0 and 1, where 1 means the full width of the image.
+    width: f64,
+
+    /// height of the control bounding box
+    /// Must be a value between 0 and 1, where 1 means the full height of the image.
+    heigh: f64,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct ImageControl {
+    /// Bounding box in logical coordinates. From 0 to 1. With (0,0) being the upper left corner,
+    /// and relative to the entire image.
+    ///
+    /// Keep in mind, non-square images are center-cropped by default before going to the model. (You
+    /// can specify a custom cropping if you want.). Since control coordinates are relative to the
+    /// entire image, all or a portion of your control may be outside the "model visible area".
+    rect: BoundingBox,
+
+    /// Factor to apply to the given token in the attention matrix.
+    ///
+    /// - 0 <= factor < 1 => Suppress the given token
+    /// - factor == 1 => identity operation, no change to attention
+    /// - factor > 1 => Amplify the given token
+    factor: f64,
+
+    /// What to do if a control partially overlaps with a text token.
+    ///
+    /// If set to "partial", the factor will be adjusted proportionally with the amount
+    /// of the token it overlaps. So a factor of 2.0 of a control that only covers 2 of
+    /// 4 token characters, would be adjusted to 1.5. (It always moves closer to 1, since
+    /// 1 is an identity operation for control factors.)
+    ///
+    /// If set to "complete", the full factor will be applied as long as the control
+    /// overlaps with the token at all.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    token_overlap: Option<String>,
+}
+
 /// The prompt for models can be a combination of different modalities (Text and Image). The type of
 /// modalities which are supported depend on the Model in question.
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Modality {
     /// The only type of prompt which can be used with pure language models
-    Text { data: String },
+    Text {
+        data: String,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        controls: Option<Vec<TextControl>>,
+    },
     /// An image input into the model. See [`Modality::from_image_path`].
-    Image { data: String },
-    ///
+    Image {
+        /// An image send as part of a prompt to a model. The image is represented as base64.
+        ///
+        /// Note: The models operate on square images. All non-square images are center-cropped
+        /// before going to the model, so portions of the image may not be visible.
+        ///
+        /// You can supply specific cropping parameters if you like, to choose a different area
+        /// of the image than a center-crop. Or, you can always transform the image yourself to
+        /// a square before sending it.
+        data: String,
+
+        /// x-coordinate of top left corner of cropping box in pixels
+        #[serde(skip_serializing_if = "Option::is_none")]
+        x: Option<i32>,
+
+        /// y-coordinate of top left corner of cropping box in pixels
+        #[serde(skip_serializing_if = "Option::is_none")]
+        y: Option<i32>,
+
+        /// Size of the cropping square in pixels
+        #[serde(skip_serializing_if = "Option::is_none")]
+        size: Option<i32>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        controls: Option<Vec<ImageControl>>,
+    },
     #[serde(rename = "token_ids")]
     TokenIds {
         data: Vec<u32>,
+
         #[serde(skip_serializing_if = "Option::is_none")]
         controls: Option<Vec<TokenControl>>,
     },
@@ -61,8 +179,11 @@ pub enum Modality {
 
 impl Modality {
     /// Instantiates a text prompt
-    pub fn from_text(text: impl Into<String>) -> Self {
-        Modality::Text { data: text.into() }
+    pub fn from_text(text: impl Into<String>, controls: Option<Vec<TextControl>>) -> Self {
+        Modality::Text {
+            data: text.into(),
+            controls,
+        }
     }
 
     /// Instantiates a token_ids prompt
