@@ -1,7 +1,8 @@
 use super::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse, ListApiTokensResponse};
 use super::completion::{CompletionRequest, CompletionResponse};
 use super::embedding::{
-    EmbeddingRequest, EmbeddingResponse, SemanticEmbeddingRequest, SemanticEmbeddingResponse,
+    BatchSemanticEmbeddingRequest, BatchSemanticEmbeddingResponse, EmbeddingRequest,
+    EmbeddingResponse, SemanticEmbeddingRequest, SemanticEmbeddingResponse,
 };
 use super::evaluate::{EvaluationRequest, EvaluationResponse};
 use super::tokenization::{
@@ -9,7 +10,6 @@ use super::tokenization::{
 };
 use super::users::{UserChange, UserDetail};
 use bytes::Bytes;
-use serde::Serialize;
 use tokenizers::Tokenizer;
 
 #[derive(thiserror::Error, Debug)]
@@ -187,6 +187,7 @@ impl Client {
         Ok(response_body)
     }
 
+    /// Will complete a prompt using a specific model.
     pub async fn completion(
         &self,
         req: &CompletionRequest,
@@ -195,6 +196,7 @@ impl Client {
         Ok(self.post_nice("/complete", req, nice).await?)
     }
 
+    /// Evaluates the model's likelihood to produce a completion given a prompt.
     pub async fn evaluate(
         &self,
         req: &EvaluationRequest,
@@ -203,6 +205,7 @@ impl Client {
         Ok(self.post_nice("/evaluate", req, nice).await?)
     }
 
+    /// Embeds a text using a specific model. Resulting vectors that can be used for downstream tasks (e.g. semantic similarity) and models (e.g. classifiers).
     pub async fn embed(
         &self,
         req: &EmbeddingRequest,
@@ -211,6 +214,7 @@ impl Client {
         Ok(self.post_nice("/embed", req, nice).await?)
     }
 
+    /// Embeds a prompt using a specific model and semantic embedding method. Resulting vectors that can be used for downstream tasks (e.g. semantic similarity) and models (e.g. classifiers). To obtain a valid model,
     pub async fn semantic_embed(
         &self,
         req: &SemanticEmbeddingRequest,
@@ -219,6 +223,16 @@ impl Client {
         Ok(self.post_nice("/semantic_embed", req, nice).await?)
     }
 
+    /// Embeds multiple prompts using a specific model and semantic embedding method. Resulting vectors that can be used for downstream tasks (e.g. semantic similarity) and models (e.g. classifiers).
+    pub async fn batch_semantic_embed(
+        &self,
+        req: &BatchSemanticEmbeddingRequest,
+        nice: Option<bool>,
+    ) -> Result<BatchSemanticEmbeddingResponse, ApiError> {
+        Ok(self.post_nice("/batch_semantic_embed", req, nice).await?)
+    }
+
+    /// Tokenize a prompt for a specific model.
     pub async fn tokenize(
         &self,
         req: &TokenizationRequest,
@@ -226,6 +240,7 @@ impl Client {
         Ok(self.post("/tokenize", req, None).await?)
     }
 
+    /// Detokenize a list of tokens into a string.
     pub async fn detokenize(
         &self,
         req: &DetokenizationRequest,

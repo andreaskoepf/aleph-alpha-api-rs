@@ -2,7 +2,8 @@ use aleph_alpha_api_rs::v1::api_tokens::{CreateApiTokenRequest, CreateApiTokenRe
 use aleph_alpha_api_rs::v1::client::Client;
 use aleph_alpha_api_rs::v1::completion::{CompletionRequest, Prompt};
 use aleph_alpha_api_rs::v1::embedding::{
-    EmbeddingRepresentation, EmbeddingRequest, SemanticEmbeddingRequest,
+    BatchSemanticEmbeddingRequest, EmbeddingRepresentation, EmbeddingRequest,
+    SemanticEmbeddingRequest,
 };
 use aleph_alpha_api_rs::v1::evaluate::EvaluationRequest;
 use aleph_alpha_api_rs::v1::tokenization::{DetokenizationRequest, TokenizationRequest};
@@ -129,6 +130,27 @@ async fn semantic_embed_with_luminous_base() {
 
     let response = client.semantic_embed(&req, Some(true)).await.unwrap();
     assert_eq!(response.embedding.len(), 128);
+}
+
+#[tokio::test]
+async fn batch_semantic_embed_with_luminous_base() {
+    let client = Client::new(AA_API_TOKEN.clone()).expect("failed to create client");
+    let model = "luminous-base";
+    let prompt1 = Prompt::from_text("An apple a day keeps the doctor away.");
+    let prompt2 = Prompt::from_text("The cat is on the mat.");
+
+    let req = BatchSemanticEmbeddingRequest {
+        model: model.to_owned(),
+        prompts: vec![prompt1, prompt2],
+        representation: EmbeddingRepresentation::Symmetric,
+        compress_to_size: Some(128),
+        ..Default::default()
+    };
+
+    let response = client.batch_semantic_embed(&req, Some(true)).await.unwrap();
+    assert_eq!(response.embeddings.len(), 2);
+    assert_eq!(response.embeddings[0].len(), 128);
+    assert_eq!(response.embeddings[1].len(), 128);
 }
 
 #[tokio::test]
