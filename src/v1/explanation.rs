@@ -1,4 +1,5 @@
 use super::completion::{BoundingBox, Hosting, Prompt};
+use crate::impl_builder_methods;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug)]
@@ -180,6 +181,20 @@ pub struct ExplanationRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub control_token_overlap: Option<ControlTokenOverlap>,
 }
+
+impl_builder_methods!(
+    ExplanationRequest,
+    hosting: Hosting,
+    target: String,
+    control_factor: f64,
+    contextual_control_threshold: f64,
+    control_log_additive: bool,
+    postprocessing: Postprocessing,
+    normalize: bool,
+    prompt_granularity: PromptGranularity,
+    target_granularity: TargetGranularity,
+    control_token_overlap: ControlTokenOverlap
+);
 
 #[derive(Deserialize, Debug)]
 pub struct ScoredSegment {

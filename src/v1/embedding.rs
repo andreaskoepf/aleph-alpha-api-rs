@@ -1,4 +1,5 @@
 use super::completion::{Hosting, Prompt};
+use crate::impl_builder_methods;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -85,6 +86,15 @@ impl EmbeddingRequest {
         }
     }
 }
+
+impl_builder_methods!(
+    EmbeddingRequest,
+    tokens: bool,
+    embedding_type: String,
+    normalize: bool,
+    contextual_control_threshold: f64,
+    control_log_additive: bool
+);
 
 type Embedding = Vec<f32>;
 type PoolingEmbeddings = HashMap<String, Embedding>;
@@ -177,6 +187,15 @@ pub struct SemanticEmbeddingRequest {
     pub control_log_additive: Option<bool>,
 }
 
+impl_builder_methods!(
+    SemanticEmbeddingRequest,
+    hosting: Hosting,
+    compress_to_size: i32,
+    normalize: bool,
+    contextual_control_threshold: f64,
+    control_log_additive: bool
+);
+
 #[derive(Deserialize, Debug)]
 pub struct SemanticEmbeddingResponse {
     /// model name and version (if any) of the used model for inference
@@ -231,6 +250,15 @@ pub struct BatchSemanticEmbeddingRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub control_log_additive: Option<bool>,
 }
+
+impl_builder_methods!(
+    BatchSemanticEmbeddingRequest,
+    hosting: Hosting,
+    compress_to_size: i32,
+    normalize: bool,
+    contextual_control_threshold: f64,
+    control_log_additive: bool
+);
 
 #[derive(Deserialize, Debug)]
 pub struct BatchSemanticEmbeddingResponse {

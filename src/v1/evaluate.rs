@@ -1,4 +1,5 @@
 use super::completion::{Hosting, Prompt};
+use crate::impl_builder_methods;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug, Default)]
@@ -52,6 +53,13 @@ impl EvaluationRequest {
         }
     }
 }
+
+impl_builder_methods!(
+    EvaluationRequest,
+    hosting: Hosting,
+    contextual_control_threshold: f64,
+    control_log_additive: bool
+);
 
 #[derive(Deserialize, Debug)]
 pub struct EvaluationResponse {
