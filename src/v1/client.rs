@@ -6,6 +6,9 @@ use super::tokenization::{
     DetokenizationRequest, DetokenizationResponse, TokenizationRequest, TokenizationResponse,
 };
 use super::users::{UserChange, UserDetail};
+use bytes::Bytes;
+use serde::Serialize;
+use tokenizers::Tokenizer;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ApiError {
@@ -28,7 +31,10 @@ pub enum ApiError {
     Http { status: u16, body: String },
     /// Most likely either TLS errors creating the Client, or IO errors.
     #[error(transparent)]
-    Other(#[from] reqwest::Error),
+    Client(#[from] reqwest::Error),
+
+    #[error(transparent)]
+    Tokenizer(#[from] tokenizers::Error),
 }
 
 pub struct Client {
@@ -81,9 +87,16 @@ mod http {
         client: &reqwest::Client,
         base_url: &str,
         path: &str,
+        query: Option<Vec<(String, String)>>,
     ) -> Result<reqwest::Response, ApiError> {
         let url = format!("{base_url}{path}");
-        let response = client.get(url).send().await?;
+        let mut request = client.get(url);
+        println!("{:?}", request);
+        if let Some(q) = query {
+            request = request.query(&q);
+        }
+        let response = request.send().await?;
+        println!("response: {:?}", response);
         translate_http_error(response).await
     }
 
@@ -123,18 +136,18 @@ impl Client {
         use reqwest::header::{ACCEPT, CONTENT_TYPE};
 
         let url = format!("{base_url}{path}", base_url = self.base_url, path = path);
-        let mut response = self.http_client.post(url);
+        let mut request = self.http_client.post(url);
 
         if let Some(q) = query {
-            response = response.query(&q);
+            request = request.query(&q);
         }
 
-        let response = response
+        let request = request
             .header(CONTENT_TYPE, "application/json")
             .header(ACCEPT, "application/json")
-            .json(data)
-            .send()
-            .await?;
+            .json(data);
+        print!("{:?}", request);
+        let response = request.send().await?;
         let response = http::translate_http_error(response).await?;
         let response_body: O = response.json().await?;
         Ok(response_body)
@@ -155,14 +168,20 @@ impl Client {
     }
 
     pub async fn get<O: serde::de::DeserializeOwned>(&self, path: &str) -> Result<O, ApiError> {
-        let response = http::get(&self.http_client, &self.base_url, path).await?;
+        let response = http::get(&self.http_client, &self.base_url, path, None).await?;
         let response_body = response.json().await?;
         Ok(response_body)
     }
 
     pub async fn get_string(&self, path: &str) -> Result<String, ApiError> {
-        let response = http::get(&self.http_client, &self.base_url, path).await?;
+        let response = http::get(&self.http_client, &self.base_url, path, None).await?;
         let response_body = response.text().await?;
+        Ok(response_body)
+    }
+
+    pub async fn get_binary(&self, path: &str) -> Result<Bytes, ApiError> {
+        let response = http::get(&self.http_client, &self.base_url, path, None).await?;
+        let response_body = response.bytes().await?;
         Ok(response_body)
     }
 
@@ -202,6 +221,18 @@ impl Client {
         req: &DetokenizationRequest,
     ) -> Result<DetokenizationResponse, ApiError> {
         Ok(self.post("/detokenize", req, None).await?)
+    }
+
+    pub async fn get_tokenizer_binary(&self, model: &str) -> Result<Bytes, ApiError> {
+        let path = format!("/models/{model}/tokenizer");
+        let vocabulary = self.get_binary(&path).await?;
+        Ok(vocabulary)
+    }
+
+    pub async fn get_tokenizer(&self, model: &str) -> Result<Tokenizer, ApiError> {
+        let vocabulary = self.get_tokenizer_binary(model).await?;
+        let tokenizer = Tokenizer::from_bytes(vocabulary)?;
+        Ok(tokenizer)
     }
 
     /// Will return the version number of the API that is deployed to this environment.

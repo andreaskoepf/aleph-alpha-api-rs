@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use aleph_alpha_api_rs::v1::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse};
 use aleph_alpha_api_rs::v1::client::Client;
 use aleph_alpha_api_rs::v1::completion::{CompletionRequest, Prompt};
@@ -167,6 +169,47 @@ async fn detokenization_with_luminous_base() {
 
     // Then
     assert!(response.result.contains("Hello, World!"));
+}
+
+#[tokio::test]
+async fn download_tokenizer_luminous_base() {
+    // Given
+    let model = "luminous-base";
+    let client = Client::new(AA_API_TOKEN.clone()).unwrap();
+    let input: &str = "This is a test";
+
+    // When
+    let tokenizer = client.get_tokenizer(model).await.unwrap();
+    let encoding = tokenizer.encode(input, false).unwrap();
+
+    // Then
+    assert!(encoding.get_ids().len() > 0);
+    assert_eq!(encoding.get_ids(), [1730, 387, 247, 3173]);
+}
+
+#[tokio::test]
+async fn tokenizer_cross_check_luminous_base() {
+    // Given
+    let model = "luminous-base";
+    let client = Client::new(AA_API_TOKEN.clone()).unwrap();
+    let input: &str = "the cat is on the mat";
+
+    // When
+    let tokenizer = client.get_tokenizer(model).await.unwrap();
+    let encoding = tokenizer.encode(input, false).unwrap();
+    let tokenization_response = client
+        .tokenize(&TokenizationRequest {
+            model: model.to_owned(),
+            prompt: input.to_owned(),
+            tokens: true,
+            token_ids: true,
+        })
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(encoding.get_ids(), tokenization_response.token_ids.unwrap());
+    assert_eq!(encoding.get_tokens(), tokenization_response.tokens.unwrap());
 }
 
 #[tokio::test]
