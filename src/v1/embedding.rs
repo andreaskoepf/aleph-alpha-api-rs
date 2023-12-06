@@ -100,3 +100,87 @@ pub struct EmbeddingResponse {
 
     pub tokens: Option<Vec<String>>,
 }
+
+/// Type of embedding representation to embed the prompt with.
+///
+/// `"symmetric"`: Symmetric embeddings assume that the text to be compared is interchangeable. Usage examples for symmetric embeddings are clustering, classification, anomaly detection or visualisation tasks. "symmetric" embeddings should be compared with other "symmetric" embeddings.
+///
+/// `"document"` and `"query"`: Asymmetric embeddings assume that there is a difference between queries and documents. They are used together in use cases such as search where you want to compare shorter queries against larger documents.
+///
+/// `"query"`-embeddings are optimized for shorter texts, such as questions or keywords.
+///
+/// `"document"`-embeddings are optimized for larger pieces of text to compare queries against.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum EmbeddingRepresentation {
+    Symmetric,
+    Document,
+    Query,
+}
+
+impl Default for EmbeddingRepresentation {
+    fn default() -> Self {
+        EmbeddingRepresentation::Symmetric
+    }
+}
+
+/// Embeds a prompt using a specific model and semantic embedding method. Resulting vectors that can be used for downstream tasks (e.g. semantic similarity) and models (e.g. classifiers).
+#[derive(Serialize, Debug, Default)]
+pub struct SemanticEmbeddingRequest {
+    /// Name of the model to use. A model name refers to a model's architecture (number of parameters among others). The most recent version of the model is always used. The model output contains information as to the model version. To create semantic embeddings, please use `luminous-base`.
+    pub model: String,
+
+    /// Possible values: [aleph-alpha, None]
+    /// Optional parameter that specifies which datacenters may process the request. You can either set the
+    /// parameter to "aleph-alpha" or omit it (defaulting to null).
+    /// Not setting this value, or setting it to None, gives us maximal flexibility in processing your
+    /// request in our own datacenters and on servers hosted with other providers. Choose this option for
+    /// maximum availability.
+    /// Setting it to "aleph-alpha" allows us to only process the request in our own datacenters. Choose this
+    /// option for maximal data privacy.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hosting: Option<Hosting>,
+
+    /// This field is used to send prompts to the model. A prompt can either be a text prompt or a multimodal prompt. A text prompt is a string of text. A multimodal prompt is an array of prompt items. It can be a combination of text, images, and token ID arrays.
+    /// In the case of a multimodal prompt, the prompt items will be concatenated and a single prompt will be used for the model.
+    /// Tokenization:
+    /// Token ID arrays are used as as-is.
+    /// Text prompt items are tokenized using the tokenizers specific to the model.
+    /// Each image is converted into 144 tokens.
+    pub prompt: Prompt,
+
+    /// Type of embedding representation to embed the prompt with.
+    pub representation: EmbeddingRepresentation,
+
+    /// The default behavior is to return the full embedding with 5120 dimensions. With this parameter you can compress the returned embedding to 128 dimensions.
+    /// The compression is expected to result in a small drop in accuracy performance (4-6%), with the benefit of being much smaller, which makes comparing these embeddings much faster for use cases where speed is critical.
+    /// With the compressed embedding can also perform better if you are embedding really short texts or documents.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub compress_to_size: Option<i32>,
+
+    /// Return normalized embeddings. This can be used to save on additional compute when applying a cosine similarity metric.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub normalize: Option<bool>,
+
+    /// If set to `null`, attention control parameters only apply to those tokens that have explicitly been set in the request.
+    /// If set to a non-null value, we apply the control parameters to similar tokens as well.
+    /// Controls that have been applied to one token will then be applied to all other tokens
+    /// that have at least the similarity score defined by this parameter.
+    /// The similarity score is the cosine similarity of token embeddings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contextual_control_threshold: Option<f64>,
+
+    /// `true`: apply controls on prompt items by adding the `log(control_factor)` to attention scores.
+    /// `false`: apply controls on prompt items by `(attention_scores - -attention_scores.min(-1)) * control_factor`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub control_log_additive: Option<bool>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SemanticEmbeddingResponse {
+    /// model name and version (if any) of the used model for inference
+    pub model_version: String,
+
+    /// A list of floats that can be used to compare against other embeddings.
+    pub embedding: Vec<f32>,
+}

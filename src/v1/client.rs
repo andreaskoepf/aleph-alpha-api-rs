@@ -1,6 +1,8 @@
 use super::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse, ListApiTokensResponse};
 use super::completion::{CompletionRequest, CompletionResponse};
-use super::embedding::{EmbeddingRequest, EmbeddingResponse};
+use super::embedding::{
+    EmbeddingRequest, EmbeddingResponse, SemanticEmbeddingRequest, SemanticEmbeddingResponse,
+};
 use super::evaluate::{EvaluationRequest, EvaluationResponse};
 use super::tokenization::{
     DetokenizationRequest, DetokenizationResponse, TokenizationRequest, TokenizationResponse,
@@ -146,7 +148,7 @@ impl Client {
             .header(CONTENT_TYPE, "application/json")
             .header(ACCEPT, "application/json")
             .json(data);
-        print!("{:?}", request);
+
         let response = request.send().await?;
         let response = http::translate_http_error(response).await?;
         let response_body: O = response.json().await?;
@@ -207,6 +209,14 @@ impl Client {
         nice: Option<bool>,
     ) -> Result<EmbeddingResponse, ApiError> {
         Ok(self.post_nice("/embed", req, nice).await?)
+    }
+
+    pub async fn semantic_embed(
+        &self,
+        req: &SemanticEmbeddingRequest,
+        nice: Option<bool>,
+    ) -> Result<SemanticEmbeddingResponse, ApiError> {
+        Ok(self.post_nice("/semantic_embed", req, nice).await?)
     }
 
     pub async fn tokenize(
