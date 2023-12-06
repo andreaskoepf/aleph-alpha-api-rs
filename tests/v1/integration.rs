@@ -46,7 +46,7 @@ async fn completion_with_luminous_base_token_ids() {
     let prompt = Prompt::from_token_ids(vec![49222, 15, 5390, 4], None);
 
     // When
-    let mut req = CompletionRequest::new("luminous-base".into(), prompt, 20);
+    let mut req = CompletionRequest::new("luminous-base".into(), prompt, 20).top_k(16);
     req.echo = Some(true);
 
     let response = client.completion(&req, Some(true)).await.unwrap();
