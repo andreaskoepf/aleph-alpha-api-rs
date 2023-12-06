@@ -5,6 +5,7 @@ use super::embedding::{
     EmbeddingResponse, SemanticEmbeddingRequest, SemanticEmbeddingResponse,
 };
 use super::evaluate::{EvaluationRequest, EvaluationResponse};
+use super::explanation::{ExplanationRequest, ExplanationResponse};
 use super::tokenization::{
     DetokenizationRequest, DetokenizationResponse, TokenizationRequest, TokenizationResponse,
 };
@@ -203,6 +204,15 @@ impl Client {
         nice: Option<bool>,
     ) -> Result<EvaluationResponse, ApiError> {
         Ok(self.post_nice("/evaluate", req, nice).await?)
+    }
+
+    /// Better understand the source of a completion, specifically on how much each section of a prompt impacts each token of the completion.
+    pub async fn explain(
+        &self,
+        req: &ExplanationRequest,
+        nice: Option<bool>,
+    ) -> Result<ExplanationResponse, ApiError> {
+        Ok(self.post_nice("/explain", req, nice).await?)
     }
 
     /// Embeds a text using a specific model. Resulting vectors that can be used for downstream tasks (e.g. semantic similarity) and models (e.g. classifiers).

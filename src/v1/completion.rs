@@ -80,7 +80,7 @@ pub struct TextControl {
 /// Keep in mind, non-square images are center-cropped by default before going to the model.
 /// (You can specify a custom cropping if you want.). Since control coordinates are relative to
 /// the entire image, all or a portion of your control may be outside the "model visible area".
-#[derive(Serialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct BoundingBox {
     /// x-coordinate of top left corner of the control bounding box.
     /// Must be a value between 0 and 1, where 0 is the left corner and 1 is the right corner.

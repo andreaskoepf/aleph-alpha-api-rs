@@ -6,6 +6,7 @@ use aleph_alpha_api_rs::v1::embedding::{
     SemanticEmbeddingRequest,
 };
 use aleph_alpha_api_rs::v1::evaluate::EvaluationRequest;
+use aleph_alpha_api_rs::v1::explanation::{ExplanationRequest, TargetGranularity};
 use aleph_alpha_api_rs::v1::tokenization::{DetokenizationRequest, TokenizationRequest};
 use aleph_alpha_api_rs::v1::users::UserDetail;
 
@@ -96,6 +97,26 @@ async fn evaluate_with_luminous_base_flat_earth() {
         response_false.result.log_perplexity_per_token.unwrap()
             < response_true.result.log_perplexity_per_token.unwrap()
     );
+}
+
+#[tokio::test]
+async fn explain_with_luminous_base() {
+    let model = "luminous-base";
+    let client = Client::new(AA_API_TOKEN.clone()).expect("failed to create client");
+
+    let req = ExplanationRequest {
+        model: model.to_owned(),
+        prompt: Prompt::from_text("I am a programmer and French. My favorite food is"),
+        target: Some(" pizza with cheese".to_owned()),
+        target_granularity: Some(TargetGranularity::Token),
+        normalize: Some(true),
+        ..ExplanationRequest::default()
+    };
+
+    let response = client.explain(&req, Some(true)).await.unwrap();
+    println!("{:?}", response);
+
+    assert!(!response.model_version.is_empty());
 }
 
 #[tokio::test]

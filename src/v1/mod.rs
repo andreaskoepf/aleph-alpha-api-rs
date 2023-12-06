@@ -3,5 +3,6 @@ pub mod client;
 pub mod completion;
 pub mod embedding;
 pub mod evaluate;
+pub mod explanation;
 pub mod tokenization;
 pub mod users;
