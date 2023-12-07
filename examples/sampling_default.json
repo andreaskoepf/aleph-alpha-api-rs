@@ -1,0 +1,32 @@
+{
+  "default": {
+    "generate_args": {
+      "max_new_tokens": 400,
+      "min_new_tokens": 1,
+      "temperature": 1.0,
+      "presence_penalty": 1.2
+    },
+    "system_prompt": "### You are a helpful, respectful and honest virtual assistant. Always answer as helpfully as possible, while being safe. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.",
+    "assistant_name": "User:",
+    "user_name": "Assistant:"
+  },
+  "nucleus9": {
+    "generate_args": {
+      "temperature": 0.8,
+      "top_p": 0.9
+    }
+  },
+  "k50": {
+    "name": "k50",
+    "generate_args": {
+      "top_k": 50,
+      "top_p": 0.95
+    }
+  },
+  "greedy": {
+    "name": "greedy",
+    "generate_args": {
+      "temperature": 0.0
+    }
+  }
+}
