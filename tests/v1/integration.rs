@@ -1,6 +1,6 @@
 use aleph_alpha_api_rs::v1::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse};
 use aleph_alpha_api_rs::v1::client::Client;
-use aleph_alpha_api_rs::v1::completion::{CompletionRequest, Prompt};
+use aleph_alpha_api_rs::v1::completion::{CompletionRequest, Modality, Prompt};
 use aleph_alpha_api_rs::v1::embedding::{
     BatchSemanticEmbeddingRequest, EmbeddingRepresentation, EmbeddingRequest,
     SemanticEmbeddingRequest,
@@ -55,6 +55,31 @@ async fn completion_with_luminous_base_token_ids() {
     assert!(!response.completions.is_empty());
     assert!(!response.best_text().is_empty());
     assert!(response.best_text().contains("Hello, World!"));
+    println!("{:?}", response);
+}
+
+#[tokio::test]
+async fn multi_modal_completion_with_luminous_base() {
+    // Given
+    let client = Client::new(AA_API_TOKEN.clone()).expect("failed to create client");
+    let prompt = Prompt::from_vec(vec![
+        Modality::from_image_path("tests/v1/serengeti_elephants.jpg").unwrap(),
+        Modality::from_text(
+            "A detailed description of what can be seen on the picture is:",
+            None,
+        ),
+    ]);
+
+    // When
+    let req = CompletionRequest::new("luminous-base".into(), prompt, 20)
+        .top_k(16)
+        .n(2);
+    let response = client.completion(&req, Some(true)).await.unwrap();
+
+    // Then
+    assert!(!response.completions.is_empty());
+    assert!(!response.best_text().is_empty());
+    assert!(response.best_text().contains("elephant"));
     println!("{:?}", response);
 }
 

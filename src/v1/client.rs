@@ -21,10 +21,12 @@ pub struct Client {
     pub api_token: String,
 }
 
+pub const ALEPH_ALPHA_API_BASE_URL: &str = "https://api.aleph-alpha.com";
+
 impl Client {
     /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
     pub fn new(api_token: String) -> Result<Self, ApiError> {
-        Self::new_with_base_url("https://api.aleph-alpha.com".to_owned(), api_token)
+        Self::new_with_base_url(ALEPH_ALPHA_API_BASE_URL.to_owned(), api_token)
     }
 
     /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet

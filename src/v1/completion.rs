@@ -1,6 +1,8 @@
+use super::image_processing::{from_image_path, preprocess_image, LoadImageError};
 use crate::impl_builder_methods;
+use base64::prelude::{Engine as _, BASE64_STANDARD};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 #[derive(Serialize, Debug)]
 pub struct Prompt(Vec<Modality>);
@@ -196,32 +198,36 @@ impl Modality {
         }
     }
 
-    // pub fn from_image_path(path: impl AsRef<Path>) -> Result<Self, LoadImageError> {
-    //     let bytes = image_preprocessing::from_image_path(path.as_ref())?;
-    //     Ok(Self::from_image_bytes(&bytes))
-    // }
+    pub fn from_image_path(path: impl AsRef<Path>) -> Result<Self, LoadImageError> {
+        let bytes = from_image_path(path.as_ref())?;
+        Ok(Self::from_image_bytes(&bytes))
+    }
 
-    // /// Generates an image input from the binary representation of the image.
-    // ///
-    // /// Using this constructor you must use a binary representation compatible with the API. Png is
-    // /// guaranteed to be supported, and all others formats are converted into it. Furthermore, the
-    // /// model can only look at square shaped pictures. If the picture is not square shaped it will
-    // /// be center cropped.
-    // fn from_image_bytes(image: &[u8]) -> Self {
-    //     Modality::Image {
-    //         data: BASE64_STANDARD.encode(image).into(),
-    //     }
-    // }
+    /// Generates an image input from the binary representation of the image.
+    ///
+    /// Using this constructor you must use a binary representation compatible with the API. Png is
+    /// guaranteed to be supported, and all others formats are converted into it. Furthermore, the
+    /// model can only look at square shaped pictures. If the picture is not square shaped it will
+    /// be center cropped.
+    fn from_image_bytes(image: &[u8]) -> Self {
+        Modality::Image {
+            data: BASE64_STANDARD.encode(image).into(),
+            x: None,
+            y: None,
+            size: None,
+            controls: None,
+        }
+    }
 
-    // /// Image input for model
-    // ///
-    // /// The model can only see squared pictures. Images are centercropped. You may want to use this
-    // /// method instead of [`Self::from_image_path`] in case you have the image in memory already
-    // /// and do not want to load it from a file again.
-    // pub fn from_image(image: &DynamicImage) -> Result<Self, LoadImageError> {
-    //     let bytes = image_preprocessing::preprocess_image(image);
-    //     Ok(Self::from_image_bytes(&bytes))
-    // }
+    /// Image input for model
+    ///
+    /// The model can only see squared pictures. Images are centercropped. You may want to use this
+    /// method instead of [`Self::from_image_path`] in case you have the image in memory already
+    /// and do not want to load it from a file again.
+    pub fn from_image(image: &image::DynamicImage) -> Result<Self, LoadImageError> {
+        let bytes = preprocess_image(image);
+        Ok(Self::from_image_bytes(&bytes))
+    }
 }
 
 /// Optional parameter that specifies which datacenters may process the request. You can either set the

@@ -6,6 +6,7 @@ pub mod error;
 pub mod evaluate;
 pub mod explanation;
 pub mod http;
+pub mod image_processing;
 pub mod tokenization;
 pub mod users;
 

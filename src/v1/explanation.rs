@@ -2,10 +2,11 @@ use super::completion::{BoundingBox, Hosting, Prompt};
 use crate::impl_builder_methods;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum Postprocessing {
     /// Apply no postprocessing.
+    #[default]
     None,
     /// Return the absolute value of each value.
     Absolute,
@@ -13,15 +14,10 @@ pub enum Postprocessing {
     Square,
 }
 
-impl Default for Postprocessing {
-    fn default() -> Self {
-        Postprocessing::None
-    }
-}
-
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum PromptGranularityType {
+    #[default]
     Token,
     Word,
     Sentence,
@@ -59,7 +55,7 @@ pub struct PromptGranularity {
 impl Default for PromptGranularity {
     fn default() -> Self {
         Self {
-            granularity_type: PromptGranularityType::Token,
+            granularity_type: PromptGranularityType::default(),
             delimiter: String::new(),
         }
     }
@@ -76,17 +72,12 @@ pub enum TargetGranularity {
     Token,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ControlTokenOverlap {
+    #[default]
     Partial,
     Complete,
-}
-
-impl Default for ControlTokenOverlap {
-    fn default() -> Self {
-        ControlTokenOverlap::Partial
-    }
 }
 
 #[derive(Serialize, Debug, Default)]
