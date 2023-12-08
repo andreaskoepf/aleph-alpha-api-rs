@@ -1,4 +1,3 @@
-use super::api_tokens::{CreateApiTokenRequest, CreateApiTokenResponse, ListApiTokensResponse};
 use super::completion::{CompletionRequest, CompletionResponse};
 use super::embedding::{
     BatchSemanticEmbeddingRequest, BatchSemanticEmbeddingResponse, EmbeddingRequest,
@@ -11,7 +10,6 @@ use super::http;
 use super::tokenization::{
     DetokenizationRequest, DetokenizationResponse, TokenizationRequest, TokenizationResponse,
 };
-use super::users::{UserChange, UserDetail};
 use bytes::Bytes;
 use tokenizers::Tokenizer;
 
@@ -98,6 +96,30 @@ impl Client {
     }
 
     /// Will complete a prompt using a specific model.
+    /// Example usage:
+    /// ```
+    ///use aleph_alpha_api::{error::ApiError, Client, CompletionRequest, LUMINOUS_BASE};
+    ///
+    ///const AA_API_TOKEN: &str = "<YOUR_AA_API_TOKEN>";
+    ///
+    ///async fn print_completion() -> Result<(), ApiError> {
+    ///    let client = Client::new(AA_API_TOKEN.to_owned())?;
+    ///
+    ///    let request =
+    ///        CompletionRequest::from_text(LUMINOUS_BASE.to_owned(), "An apple a day".to_owned(), 10)
+    ///            .temperature(0.8)
+    ///            .top_k(50)
+    ///            .top_p(0.95)
+    ///            .best_of(2)
+    ///            .minimum_tokens(2);
+    ///
+    ///    let response = client.completion(&request, Some(true)).await?;
+    ///
+    ///    println!("An apple a day{}", response.best_text());
+    ///
+    ///    Ok(())
+    ///}
+    /// ```
     pub async fn completion(
         &self,
         req: &CompletionRequest,
@@ -182,38 +204,5 @@ impl Client {
     /// Will return the version number of the API that is deployed to this environment.
     pub async fn get_version(&self) -> Result<String, ApiError> {
         Ok(self.get_string("/version").await?)
-    }
-
-    /// Will return a list of API tokens that are registered for this user (only token metadata is returned, not the actual tokens)
-    pub async fn list_api_tokens(&self) -> Result<ListApiTokensResponse, ApiError> {
-        Ok(self.get("/users/me/tokens").await?)
-    }
-
-    /// Create a new token to authenticate against the API with (the actual API token is only returned when calling this endpoint)
-    pub async fn create_api_token(
-        &self,
-        req: &CreateApiTokenRequest,
-    ) -> Result<CreateApiTokenResponse, ApiError> {
-        Ok(self.post("/users/me/tokens", req, None).await?)
-    }
-
-    /// Delete an API token
-    pub async fn delete_api_token(&self, token_id: i32) -> Result<(), ApiError> {
-        let path = format!("/users/me/tokens/{token_id}");
-        http::delete(&self.http_client, &self.base_url, &path).await?;
-        Ok(())
-    }
-
-    /// Get settings for own user
-    pub async fn get_user_settings(&self) -> Result<UserDetail, ApiError> {
-        Ok(self.get("/users/me").await?)
-    }
-
-    /// Change settings for own user
-    pub async fn change_user_settings(
-        &self,
-        settings: &UserChange,
-    ) -> Result<UserDetail, ApiError> {
-        Ok(self.post("/users/me", settings, None).await?)
     }
 }

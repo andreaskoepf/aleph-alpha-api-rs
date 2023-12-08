@@ -487,6 +487,9 @@ impl CompletionRequest {
             ..Self::default()
         }
     }
+    pub fn from_text(model: String, prompt: String, maximum_tokens: u32) -> Self {
+        Self::new(model, Prompt::from_text(prompt), maximum_tokens)
+    }
 }
 
 impl_builder_methods!(

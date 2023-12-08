@@ -104,7 +104,7 @@ pub struct ExplanationRequest {
 
     /// Factor to apply to the given token in the attention matrix.
     ///
-    /// - 0 <= factor < 1 => Supress the given token
+    /// - 0 <= factor < 1 => Suppress the given token
     /// - factor == 1 => identity operation, no change to attention
     /// - factor > 1 => Amplify the given token
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -8,9 +8,7 @@ use std::io::BufReader;
 use std::path::Path;
 use tokio;
 
-use aleph_alpha_api::v1::client::Client;
-use aleph_alpha_api::v1::completion::CompletionRequest;
-use aleph_alpha_api::v1::completion::Prompt;
+use aleph_alpha_api::{Client, CompletionRequest, Prompt};
 use clap::Parser;
 use json;
 use serde::Serialize;
