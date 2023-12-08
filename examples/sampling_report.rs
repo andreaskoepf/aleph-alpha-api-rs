@@ -46,9 +46,17 @@ struct GenerationArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub presence_penalty: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency_penalty: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_k: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disable_optimizations: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub n: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub best_of: Option<u32>,
 }
 
 #[derive(Deserialize, Clone, Default, Debug)]
@@ -142,6 +150,19 @@ fn merge_with_default(
     if let Some(presence_penalty) = source.generate_args.presence_penalty {
         cfg.generate_args.presence_penalty = Some(presence_penalty);
     }
+    if let Some(frequency_penalty) = source.generate_args.frequency_penalty {
+        cfg.generate_args.frequency_penalty = Some(frequency_penalty);
+    }
+    if let Some(disable_optimizations) = source.generate_args.disable_optimizations {
+        cfg.generate_args.disable_optimizations = Some(disable_optimizations);
+    }
+    if let Some(best_of) = source.generate_args.best_of {
+        cfg.generate_args.best_of = Some(best_of);
+    }
+    if let Some(n) = source.generate_args.n {
+        cfg.generate_args.n = Some(n);
+    }
+
     if let Some(system_prompt) = &source.system_prompt {
         cfg.system_prompt = Some(system_prompt.clone());
     }
@@ -195,6 +216,20 @@ fn configure_request(req: &mut CompletionRequest, args: &GenerationArgs) {
     if let Some(presence_penalty) = args.presence_penalty {
         req.presence_penalty = Some(presence_penalty);
         req.repetition_penalties_include_completion = Some(true);
+        //req.use_multiplicative_presence_penalty = Some(true);
+    }
+    if let Some(frequency_penalty) = args.frequency_penalty {
+        req.frequency_penalty = Some(frequency_penalty);
+        req.repetition_penalties_include_completion = Some(true);
+    }
+    if let Some(disable_optimizations) = args.disable_optimizations {
+        req.disable_optimizations = Some(disable_optimizations);
+    }
+    if let Some(best_of) = args.best_of {
+        req.best_of = Some(best_of);
+    }
+    if let Some(n) = args.n {
+        req.n = Some(n);
     }
 }
 
@@ -228,14 +263,18 @@ async fn sample_all(
         configure_request(&mut req, &configuration.generate_args);
 
         let response = client.completion(&req, Some(nice)).await.unwrap();
-        let best_text = response.best_text();
         println!("{}", response.best_text());
 
-        result.results.push(PromptResult {
+        let prompt_result = PromptResult {
             sampling_config: name.clone(),
             sampling_params: configuration.generate_args.clone(),
-            outputs: vec![best_text.to_owned()],
-        })
+            outputs: response
+                .completions
+                .iter()
+                .map(|x| x.completion.clone())
+                .collect(),
+        };
+        result.results.push(prompt_result);
     }
     result
 }

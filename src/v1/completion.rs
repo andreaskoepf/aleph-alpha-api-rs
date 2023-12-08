@@ -391,13 +391,13 @@ pub struct CompletionRequest {
     /// completion with the highest log probability per token is returned. If the parameter `n` is greater
     /// than 1 more than 1 (`n`) completions will be returned. `best_of` must be strictly greater than `n`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub best_of: Option<i32>,
+    pub best_of: Option<u32>,
 
     /// The number of completions to return. If argmax sampling is used (temperature, top_k, top_p are all
     /// default) the same completions will be produced. This parameter should only be increased if random
     /// sampling is used.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub n: Option<i32>,
+    pub n: Option<u32>,
 
     /// Number of top log probabilities for each token generated. Log probabilities can be used in downstream
     /// tasks or to assess the model's certainty when producing tokens. No log probabilities are returned if
@@ -508,8 +508,8 @@ impl_builder_methods!(
     penalty_exceptions: Vec<String>,
     penalty_bias: String,
     penalty_exceptions_include_stop_sequences: bool,
-    best_of: i32,
-    n: i32,
+    best_of: u32,
+    n: u32,
     log_probs: i32,
     stop_sequences: Vec<String>,
     tokens: bool,
