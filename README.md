@@ -33,3 +33,20 @@ async fn main() {
     print_completion().await.unwrap();
 }
 ```
+
+## Running the Sampling Report Example
+
+The sampling report example generates completions of 250 random prompts that were collected as part of the [Open-Assistant](https://github.com/LAION-AI/Open-Assistant/) project.
+
+The sampling parameters used for the completions are specified via a JSON configuration file. You find two example configurations for general models and instruction tuned models (the *-control variants): 
+- [sampling_default.json](examples/config/sampling_default.json)
+- [sampling_control.json](examples/config/sampling_control.json)
+
+Specify the configuration file to use via the `--config` command line argument.
+
+Please make sure to set your API token as `AA_API_TOKEN` environment variable before launching the example:
+
+```bash
+export AA_API_TOKEN=<YOUR_AA_API_TOKEN>
+cargo run --example sampling_report -- --config examples/config/sampling_default.json --model luminous-base
+```

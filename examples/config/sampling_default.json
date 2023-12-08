@@ -7,7 +7,7 @@
       "presence_penalty": 1.2,
       "disable_optimizations": false,
       "n": 2,
-      "best_of": 1
+      "best_of": 3
     },
     "system_prompt": "### You are a helpful, respectful and honest virtual assistant. Always answer as helpfully as possible, while being safe. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.",
     "assistant_name": "User:",

@@ -70,7 +70,7 @@ type NamedConfigurations = HashMap<String, SamplingConfiguration>;
 #[derive(Parser, Debug, Serialize, Clone)]
 struct Args {
     /// File name of jsonl file containing prompts
-    #[arg(long, default_value = "examples/prompts_oa_en.jsonl")]
+    #[arg(long, default_value = "examples/config/prompts_oa_en.jsonl")]
     prompts: String,
 
     #[arg(long, required = true)]
